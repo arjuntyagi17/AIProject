@@ -1,10 +1,12 @@
 import streamlit as st
-from streamlit_option_menu import option_menu
+#from streamlit_option_menu import option_menu
 #import streamlit_authenticator as stauth
 import pandas as pd
 import numpy as np
 from ultralytics import YOLO
 from PIL import Image
+
+"""
 
 with st.sidebar:
     selected = option_menu(
@@ -54,3 +56,22 @@ elif selected == "Image Uploader":
                  st.write(predictions)
             except Exception as e:
                  st.error(f"An error occurred: {e}")
+"""
+
+
+st.title("Image Uploader")
+st.text("Upload an image to run the YOLO classifier.")
+uploaded_file = st.file_uploader("Choose an image...", type=["png", "jpg", "jpeg"])
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption='Uploaded Image', use_column_width=True)
+    if st.button("Submit"):
+        st.text("Running YOLO model...")
+        try:
+             model = YOLO("best.pt")
+             results = model(image)
+             predictions = results.pandas().xyxy[0]
+             st.write("Predictions:")
+             st.write(predictions)
+        except Exception as e:
+             st.error(f"An error occurred: {e}")
