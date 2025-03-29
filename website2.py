@@ -8,7 +8,7 @@ from datetime import datetime
 import json
 #import streamlit.secrets
 
-firebaseConfig = json.loads(st.secrets["firebase_config"])
+firebaseConfig = json.loads(st.secrets["firebase"])
 
 # 🔥 Firebase Configuration
 # firebaseConfig = {
