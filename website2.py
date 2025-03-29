@@ -1,75 +1,71 @@
 import streamlit as st
-#from streamlit_option_menu import option_menu
-#import streamlit_authenticator as stauth
+import pyrebase
 import pandas as pd
-import numpy as np
 from ultralytics import YOLO
 from PIL import Image
+from datetime import datetime
 
-# with st.sidebar:
-#     selected = option_menu(
-#         menu_title=None,
-#         options=["Home", "Your Kitchen", "Settings", "Image Uploader"],
-#         icons=["house", "graph-up", "gear", "upload"]
-#     )
+import json
+import streamlit.secrets
 
-# if selected == "Home":
-#     st.title("Home")
-#     st.text("At [Name], we are focused on using artificial intelligence to combat food wastage in the restaurant industry. Our solution leverages advanced computer vision and machine learning to monitor food waste in real-time, providing restaurants with the tools to optimize their operations, reduce waste, and improve sustainability.\n\n")
-#     st.image("kitchen1.png")
-#     st.text("We deploy a camera system placed above kitchen dustbins to capture and analyze discarded food. Our AI model accurately identifies the type and quantity of waste, categorizing it by ingredient and reason for disposal. This data is then presented through a comprehensive dashboard, offering restaurant owners actionable insights into food waste patterns and inefficiencies.")
-#     st.image("kitchen2.png", width=900)
-#     st.text(" \n\nBy leveraging this data, restaurant owners can adjust inventory levels, refine portion sizes, and better align food supply with actual demand. The result is a more efficient operation, reduced waste, and lower costs—all while contributing to environmental sustainability. \n\nOur goal is to empower restaurants with the tools they need to minimize food waste, streamline their supply chain, and operate more responsibly.")
+firebaseConfig = json.loads(st.secrets["firebase_config"])
 
-# elif selected == "Your Kitchen":
-#     st.title("Your Kitchen")
-#     df = pd.DataFrame(np.random.rand(50, 20), columns=("col %d" % i for i in range(20)))
-#     st.text("")
-#     st.text("")
-#     st.line_chart(df)
-#     st.text("")
-#     st.text("")
-#     st.area_chart(df)
-#     st.text("")
-#     st.text("")
-#     st.bar_chart(df)
+# 🔥 Firebase Configuration
+# firebaseConfig = {
+#     "apiKey": "AIzaSyCJ5Fu8iQa_sUG3QA5PGwf9GhLyrIUcYEQ",
+#     "authDomain": "arjun-tyagi.firebaseapp.com",
+#     "databaseURL": "https://arjun-tyagi-default-rtdb.firebaseio.com/",
+#     "projectId": "arjun-tyagi",
+#     "storageBucket": "arjun-tyagi.appspot.com",
+#     "messagingSenderId": "135681411695",
+#     "appId": "1:135681411695:web:9e066226dec85cbae0db9a",
+#     "measurementId": "G-1J691M74X9"
+# }
 
-# elif selected == "Settings":
-#     st.title("Settings")
-
-# elif selected == "Image Uploader":
-#     st.title("Image Uploader")
-#     st.text("Upload an image to run the YOLO classifier.")
-#     uploaded_file = st.file_uploader("Choose an image...", type=["png", "jpg", "jpeg"])
-#     if uploaded_file is not None:
-#         image = Image.open(uploaded_file)
-#         st.image(image, caption='Uploaded Image', use_column_width=True)
-#         if st.button("Submit"):
-#             st.text("Running YOLO model...")
-#             try:
-#                  model = YOLO("best.pt")
-#                  results = model(image)
-#                  predictions = results.pandas().xyxy[0]
-#                  st.write("Predictions:")
-#                  st.write(predictions)
-#             except Exception as e:
-#                  st.error(f"An error occurred: {e}")
-
-
+# Initialize Firebase
+firebase = pyrebase.initialize_app(firebaseConfig)
+db = firebase.database()
 
 st.title("Image Uploader")
 st.text("Upload an image to run the YOLO classifier.")
+
 uploaded_file = st.file_uploader("Choose an image...", type=["png", "jpg", "jpeg"])
+
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption='Uploaded Image', use_column_width=True)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+
     if st.button("Submit"):
         st.text("Running YOLO model...")
+
         try:
-             model = YOLO("best.pt")
-             results = model(image)
-             predictions = results[0].to_df()
-             st.write("Predictions:")
-             st.write(predictions)
+            # 🔹 Load YOLO model
+            model = YOLO("best.pt")  
+            results = model(image)  
+
+            # 🔹 Extract predictions (only class name)
+            predictions_df = results[0].to_df()  # Convert YOLO results to DataFrame
+            predictions_list = predictions_df["name"].tolist()  # Extract only the "name" column
+
+            # 🔥 **Fix: Convert List into Dictionary for Firebase**
+            predictions_dict = {name: True for name in predictions_list}  # ✅ Store names as keys
+            
+            # 🔹 Format Firebase Data
+            data = {
+                "predictions": predictions_dict,  # ✅ No numbered keys, class names as keys
+                "timestamp": datetime.utcnow().isoformat()
+            }
+
+            # 🔥 Push to Firebase
+            db.child("image_predictions").push(data)
+
+            st.success("Predictions saved to Firebase!")
+
+            # 🔥 **Fixing Streamlit Display**
+            if len(predictions_list) == 1:
+                st.write(f"Detected: **{predictions_list[0]}**")  # ✅ Show only class name
+            else:
+                st.write("Detected:", ", ".join(predictions_list))  # ✅ Display names properly
+
         except Exception as e:
-             st.error(f"An error occurred: {e}")
+            st.error(f"An error occurred: {e}")
