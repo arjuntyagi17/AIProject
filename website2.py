@@ -5,7 +5,7 @@ from ultralytics import YOLO
 from PIL import Image
 from datetime import datetime
 
-import json
+#import json
 #import streamlit.secrets
 
 firebaseConfig = {
