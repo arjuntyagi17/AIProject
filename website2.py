@@ -6,7 +6,7 @@ from PIL import Image
 from datetime import datetime
 
 import json
-import streamlit.secrets
+#import streamlit.secrets
 
 firebaseConfig = json.loads(st.secrets["firebase_config"])
 
