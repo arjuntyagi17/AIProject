@@ -68,7 +68,7 @@ if uploaded_file is not None:
         try:
              model = YOLO("best.pt")
              results = model(image)
-             predictions = results.pandas().xyxy[0]
+             predictions = results[0].to_df()
              st.write("Predictions:")
              st.write(predictions)
         except Exception as e:
