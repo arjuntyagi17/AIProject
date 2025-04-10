@@ -4,3 +4,4 @@ numpy
 ultralytics
 pillow
 pyrebase4
+plotly
